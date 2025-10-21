@@ -1,76 +1,15 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta de Productos en CouchDB</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { color: #333; text-align: center; }
-        .search-box { display: flex; margin-bottom: 20px; }
-        .search-box input { flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px; }
-        .search-box button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .search-box button:hover { background-color: #0056b3; }
-        #results { border-top: 1px solid #eee; padding-top: 20px; }
-        .product-card { background-color: #e9ecef; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin-bottom: 10px; }
-        .product-card h3 { margin-top: 0; color: #495057; }
-        .product-card p { margin: 5px 0; color: #6c757d; }
-    </style>
+    <title>CouchDB Taller</title>
 </head>
 <body>
-    <div class="container">
-        <h1>Consulta de Productos</h1>
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Buscar por nombre o proveedor...">
-            <button id="searchButton">Buscar</button>
-        </div>
-        <div id="results">
-            <!-- Los resultados se cargarán aquí -->
-            <p>No hay productos para mostrar. Intenta una búsqueda.</p>
-        </div>
-    </div>
+    <h1>Bienvenido al Taller de CouchDB</h1>
+    <p>El servidor está funcionando correctamente.</p>
+    
+    <!-- Aquí puedes agregar la interfaz para interactuar con tus APIs -->
 
-    <script>
-        document.getElementById('searchButton').addEventListener('click', fetchProducts);
-        document.getElementById('searchInput').addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                fetchProducts();
-            }
-        });
-
-        async function fetchProducts() {
-            const query = document.getElementById('searchInput').value;
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = '<p>Cargando...</p>';
-
-            try {
-                const response = await fetch(`/api/productos?query=${encodeURIComponent(query)}`);
-                const products = await response.json();
-
-                resultsDiv.innerHTML = ''; // Limpiar resultados anteriores
-                if (products.length === 0) {
-                    resultsDiv.innerHTML = '<p>No se encontraron productos.</p>';
-                } else {
-                    products.forEach(product => {
-                        resultsDiv.innerHTML += `
-                            <div class="product-card">
-                                <h3>${product.nombre}</h3>
-                                <p><strong>Proveedor:</strong> ${product.proveedor}</p>
-                                <p><strong>Precio:</strong> $${product.precio ? product.precio.toLocaleString('es-CO') : 'N/A'}</p>
-                                <p><strong>ID CouchDB:</strong> ${product._id}</p>
-                            </div>
-                        `;
-                    });
-                }
-            } catch (error) {
-                console.error('Error al obtener productos:', error);
-                resultsDiv.innerHTML = '<p style="color: red;">Error al cargar los productos.</p>';
-            }
-        }
-
-        // Cargar todos los productos al inicio (o una búsqueda vacía)
-        fetchProducts();
-    </script>
 </body>
 </html>
