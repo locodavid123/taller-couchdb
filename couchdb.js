@@ -3,10 +3,10 @@ import nano from 'nano';
 
 // URL de conexión a CouchDB
 // Si usas localhost, por defecto CouchDB corre en el puerto 5984
-const couch = nano('http://admin:password@localhost:5984');
+const couch = nano('http://admin:123456@localhost:5984');
 
 // Nombre de la base de datos
-const dbName = 'productos';
+const dbName = 'producto';
 
 // Crear o usar la base de datos
 async function connectCouchDB() {
@@ -25,6 +25,7 @@ async function connectCouchDB() {
     return db;
   } catch (error) {
     console.error('❌ Error al conectar con CouchDB:', error);
+    throw error; // Relanzar el error para detener la ejecución
   }
 }
 

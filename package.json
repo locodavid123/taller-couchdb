@@ -1,5 +1,3 @@
 {
-  "dependencies": {
-    "nano": "^11.0.3"
-  }
+  "type": "module"
 }

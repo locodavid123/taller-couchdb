@@ -1,4 +1,4 @@
-import connectCouchDB from './db.js';
+import connectCouchDB from './couchdb.js';
 
 async function main() {
   const db = await connectCouchDB();
