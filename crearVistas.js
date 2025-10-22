@@ -10,8 +10,8 @@ async function crearVistas() {
         // Vista para contar productos por proveedor
         'cantidad-por-proveedor': {
           map: function (doc) {
-            if (doc.proveedor) {
-              emit(doc.proveedor, 1);
+            if (doc.Proveedor) {
+              emit(doc.Proveedor, 1);
             }
           }.toString(),
           reduce: '_sum' // Usamos el reductor nativo para sumar
@@ -19,27 +19,34 @@ async function crearVistas() {
         // Vista para encontrar el producto más caro por proveedor
         'mas-caro-por-proveedor': {
           map: function (doc) {
-            if (doc.proveedor && doc.precio) {
+            if (doc.Proveedor && doc.PrecioUnidad) {
               // Emitimos el proveedor como clave y un objeto con los detalles del producto como valor
-              emit(doc.proveedor, { nombre: doc.nombre, precio: doc.precio });
+              emit(doc.Proveedor, { nombre: doc.NombreProducto, precio: doc.PrecioUnidad });
             }
           }.toString(),
           reduce: function (keys, values, rereduce) {
-            // Este reductor personalizado encontrará el producto con el precio máximo
-            let max_product = { precio: -1 };
-            for (let i = 0; i < values.length; i++) {
-              if (values[i].precio > max_product.precio) {
-                max_product = values[i];
+            if (rereduce) {
+              // rereduce = true: estamos combinando resultados de reducciones anteriores
+              return values.reduce(function(a, b) {
+                return a.precio > b.precio ? a : b;
+              });
+            } else {
+              // rereduce = false: estamos reduciendo los valores del map
+              let max_product = { precio: -1 };
+              for (let i = 0; i < values.length; i++) {
+                if (values[i].precio > max_product.precio) {
+                  max_product = values[i];
+                }
               }
+              return max_product;
             }
-            return max_product;
           }.toString()
         },
         // Vista para obtener la lista de proveedores únicos (para contar en el cliente)
         'proveedores-unicos': {
           map: function (doc) {
-            if (doc.proveedor) {
-              emit(doc.proveedor, null); // Emitimos el proveedor como clave
+            if (doc.Proveedor) {
+              emit(doc.Proveedor, null); // Emitimos el proveedor como clave
             }
           }.toString()
           // No necesitamos un reductor si solo queremos las claves únicas
@@ -48,15 +55,19 @@ async function crearVistas() {
       language: 'javascript'
     };
 
-    // Intentar obtener el documento de diseño existente para actualizarlo
+    // Para actualizar un documento de diseño, CouchDB requiere la última revisión (_rev).
+    // Intentamos obtener el documento existente para conseguir esa revisión.
     try {
       const existingDoc = await db.get('_design/consultas');
       designDoc._rev = existingDoc._rev; // Adjuntar la revisión para poder actualizar
     } catch (error) {
       if (error.statusCode !== 404) {
-        throw error; // Lanzar error si no es 'not_found'
+        // Si el error es diferente a "no encontrado", algo más está mal.
+        console.error('Error inesperado al obtener el documento de diseño:', error);
+        throw error;
       }
-      // Si no existe, no hacemos nada, se creará uno nuevo
+      // Si el error es 404, significa que el documento no existe, lo cual está bien.
+      // Se creará uno nuevo en el siguiente paso.
     }
 
     await db.insert(designDoc);

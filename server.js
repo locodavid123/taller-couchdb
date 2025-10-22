@@ -21,12 +21,15 @@ async function startServer() {
     app.get('/api/productos', async (req, res) => {
       const { query } = req.query; // Obtener el parámetro 'query' de la URL
 
+      // Escapamos caracteres especiales para la expresión regular
+      const escapedQuery = (query || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
       try {
         const result = await db.find({
           selector: {
             $or: [
-              { nombre: { $regex: `(?i)${query || ''}` } }, // Búsqueda insensible a mayúsculas/minúsculas
-              { proveedor: { $regex: `(?i)${query || ''}` } }
+              { NombreProducto: { $regex: `(?i)${escapedQuery}` } }, // Búsqueda insensible a mayúsculas/minúsculas
+              { Proveedor: { $regex: `(?i)${escapedQuery}` } }
             ]
           },
           limit: 20 // Aumentamos el límite para mostrar más resultados
@@ -44,6 +47,7 @@ async function startServer() {
         const result = await db.view('consultas', 'cantidad-por-proveedor', { group: true });
         res.json(result.rows);
       } catch (error) {
+        console.error('Error en /api/stats/cantidad-por-proveedor:', error);
         res.status(500).json({ error: 'Error al obtener estadísticas' });
       }
     });
@@ -54,6 +58,7 @@ async function startServer() {
         const result = await db.view('consultas', 'mas-caro-por-proveedor', { group: true });
         res.json(result.rows);
       } catch (error) {
+        console.error('Error en /api/stats/mas-caro-por-proveedor:', error);
         res.status(500).json({ error: 'Error al obtener estadísticas' });
       }
     });
@@ -64,6 +69,7 @@ async function startServer() {
         const result = await db.view('consultas', 'proveedores-unicos', { group: true });
         res.json({ count: result.rows.length });
       } catch (error) {
+        console.error('Error en /api/stats/numero-proveedores:', error);
         res.status(500).json({ error: 'Error al obtener el número de proveedores' });
       }
     });

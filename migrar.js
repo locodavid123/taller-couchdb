@@ -1,5 +1,7 @@
 import mysql from 'mysql2/promise';
 import connectCouchDB from './couchdb.js';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
 async function migrar() {
 let mysqlConn; // Define the connection variable in the outer scope
@@ -35,6 +37,13 @@ try {
     console.log(`  - ${successes} documentos insertados/actualizados.`);
     if (conflicts > 0) console.log(`  - ${conflicts} documentos omitidos (conflicto, ya existían).`);
     if (failures > 0) console.log(`  - ❌ ${failures} documentos fallaron.`);
+
+    // Después de migrar, ejecutar los scripts para crear índices y vistas
+    console.log('\n🔄 Ejecutando scripts de configuración de la base de datos...');
+    const execPromise = promisify(exec);
+    await execPromise('node crearVistas.js');
+    console.log('✅ Scripts de configuración finalizados.');
+
 
 } catch (err) {
     console.error('❌ Error en la migración:', err);

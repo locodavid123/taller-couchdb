@@ -1,15 +1,209 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CouchDB Taller</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 2em;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1, h2 {
+            color: #005a9c;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2em;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5em;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #eef;
+            padding: 0.8em;
+            margin-bottom: 0.5em;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .card-content {
+            display: none;
+            margin-top: 1em;
+        }
+        #numero-proveedores-valor {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        form {
+            margin-bottom: 1em;
+            display: flex;
+            gap: 0.5em;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 0.5em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 0.5em 1em;
+            border: none;
+            background-color: #005a9c;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #004a80;
+        }
+    </style>
 </head>
 <body>
     <h1>Bienvenido al Taller de CouchDB</h1>
     <p>El servidor está funcionando correctamente.</p>
     
-    <!-- Aquí puedes agregar la interfaz para interactuar con tus APIs -->
+    <hr>
 
+    <div class="card">
+        <h2>Buscar Productos</h2>
+        <form id="search-form">
+            <input type="text" id="search-input" placeholder="Buscar por nombre o proveedor...">
+            <button type="submit">Buscar</button>
+        </form>
+        <ul id="product-list"></ul>
+    </div>
+
+    <div class="container">
+        <div class="card" id="card-cantidad-proveedor" data-loaded="false">
+            <h2>Cantidad de Productos por Proveedor</h2>
+            <button id="btn-cantidad-proveedor">Consultar</button>
+            <div class="card-content">
+                <ul id="cantidad-proveedor-list"></ul>
+            </div>
+        </div>
+
+        <div class="card" id="card-mas-caro" data-loaded="false">
+            <h2>Producto más Caro por Proveedor</h2>
+            <button id="btn-mas-caro">Consultar</button>
+            <div class="card-content">
+                <ul id="mas-caro-list"></ul>
+            </div>
+        </div>
+
+        <div class="card" id="card-numero-proveedores" data-loaded="false">
+            <h2>Número Total de Proveedores</h2>
+            <button id="btn-numero-proveedores">Consultar</button>
+            <div class="card-content">
+                <p id="numero-proveedores-valor"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Funcionalidad para el formulario de búsqueda ---
+            const searchForm = document.getElementById('search-form');
+            searchForm.addEventListener('submit', (event) => {
+                event.preventDefault(); // Evitar que la página se recargue
+                const query = document.getElementById('search-input').value;
+                const productList = document.getElementById('product-list');
+                productList.innerHTML = '<li>Buscando...</li>';
+
+                fetch(`/api/productos?query=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(products => {
+                        productList.innerHTML = ''; // Limpiar
+                        if (products.length === 0) {
+                            productList.innerHTML = '<li>No se encontraron productos.</li>';
+                        }
+                        products.forEach(product => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<span>${product.NombreProducto} (${product.Proveedor})</span> <strong>$${product.PrecioUnidad}</strong>`;
+                            productList.appendChild(li);
+                        });
+                    });
+            });
+
+            // --- Funcionalidad para las tarjetas interactivas ---
+
+            // Tarjeta: Cantidad de Productos por Proveedor
+            document.getElementById('btn-cantidad-proveedor').addEventListener('click', () => {
+                const cardCantidad = document.getElementById('card-cantidad-proveedor');
+                const content = cardCantidad.querySelector('.card-content');
+                const isLoaded = cardCantidad.dataset.loaded === 'true';
+
+                if (!isLoaded) {
+                    const list = document.getElementById('cantidad-proveedor-list');
+                    list.innerHTML = '<li>Cargando...</li>';
+                    fetch('/api/stats/cantidad-por-proveedor')
+                        .then(response => response.json())
+                        .then(data => {
+                            list.innerHTML = '';
+                            data.forEach(item => {
+                                const li = document.createElement('li');
+                                li.textContent = `Proveedor: ${item.key} - Cantidad: ${item.value}`;
+                                list.appendChild(li);
+                            });
+                            cardCantidad.dataset.loaded = 'true';
+                        });
+                }
+                content.style.display = content.style.display === 'block' ? 'none' : 'block';
+            });
+
+            // Tarjeta: Producto más Caro por Proveedor
+            document.getElementById('btn-mas-caro').addEventListener('click', () => {
+                const cardMasCaro = document.getElementById('card-mas-caro');
+                const content = cardMasCaro.querySelector('.card-content');
+                const isLoaded = cardMasCaro.dataset.loaded === 'true';
+
+                if (!isLoaded) {
+                    const list = document.getElementById('mas-caro-list');
+                    list.innerHTML = '<li>Cargando...</li>';
+                    fetch('/api/stats/mas-caro-por-proveedor')
+                        .then(response => response.json())
+                        .then(data => {
+                            list.innerHTML = '';
+                            data.forEach(item => {
+                                const li = document.createElement('li');
+                                li.textContent = `Proveedor: ${item.key} - Producto: ${item.value.nombre} ($${item.value.precio})`;
+                                list.appendChild(li);
+                            });
+                            cardMasCaro.dataset.loaded = 'true';
+                        });
+                }
+                content.style.display = content.style.display === 'block' ? 'none' : 'block';
+            });
+
+            // Tarjeta: Número Total de Proveedores
+            document.getElementById('btn-numero-proveedores').addEventListener('click', () => {
+                const cardNumProveedores = document.getElementById('card-numero-proveedores');
+                const content = cardNumProveedores.querySelector('.card-content');
+                const isLoaded = cardNumProveedores.dataset.loaded === 'true';
+
+                if (!isLoaded) {
+                    const p = document.getElementById('numero-proveedores-valor');
+                    p.textContent = 'Cargando...';
+                    fetch('/api/stats/numero-proveedores')
+                        .then(response => response.json())
+                        .then(data => {
+                            p.textContent = data.count;
+                            cardNumProveedores.dataset.loaded = 'true';
+                        });
+                }
+                content.style.display = content.style.display === 'block' ? 'none' : 'block';
+            });
+        });
+    </script>
 </body>
 </html>
